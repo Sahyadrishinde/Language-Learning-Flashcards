@@ -1,0 +1,144 @@
+import tkinter as tk
+from tkinter import messagebox, ttk
+
+# Flashcards data
+flashcards = {
+    "easy": [
+        {"phrase": "Hello", "translation": "konnichiwa"},
+        {"phrase": "Thank you", "translation": "arigatou"},
+        {"phrase": "Yes", "translation": "hai"}
+    ],
+    "medium": [
+        {"phrase": "Good morning", "translation": "ohayo gozaimas"},
+        {"phrase": "See you later", "translation": "ja mata"},
+        {"phrase": "University", "translation": "daigaku"}
+    ],
+    "hard": [
+        {"phrase": "Nice to meet you", "translation": "dozo yorushiku"},
+        {"phrase": "Congratulations", "translation": "omedeto gozaimas"},
+        {"phrase": "Welcome", "translation": "do itashimashite"}
+    ]
+}
+
+user_progress = {"easy": 0, "medium": 0, "hard": 0}
+flashcard_indexes = {"easy": 0, "medium": 0, "hard": 0}
+
+root = tk.Tk()
+root.title("🧠 Language Learning Flashcards")
+root.geometry("550x600")
+root.configure(bg="#fefefe")
+
+difficulty = "easy"
+current_card = None
+
+
+# Utilities
+def update_level_label():
+    level_display.config(text=f"📘 Current Level: {difficulty.capitalize()}")
+
+
+def update_progress_bar():
+    total = sum(user_progress.values())
+    progress_bar['value'] = total
+    progress_label.config(text=f"Progress: {total}/9 words")
+
+
+# Logic
+def start_session():
+    global difficulty
+    difficulty = "easy"
+    for level in flashcards:
+        flashcard_indexes[level] = 0
+        user_progress[level] = 0
+    update_progress_bar()
+    update_level_label()
+    next_flashcard()
+
+
+def next_flashcard():
+    global current_card
+    index = flashcard_indexes[difficulty] % len(flashcards[difficulty])
+    current_card = flashcards[difficulty][index]
+    phrase_label.config(text=f"🔤 Translate: {current_card['phrase']}")
+    answer_entry.delete(0, tk.END)
+
+
+def check_answer():
+    global current_card, difficulty
+    user_answer = answer_entry.get().strip().lower()
+    correct = current_card["translation"].strip().lower()
+
+    if user_answer == correct:
+        messagebox.showinfo("Correct", "✅ Well done!")
+        user_progress[difficulty] += 1
+        flashcard_indexes[difficulty] += 1
+        update_progress_bar()
+
+        if user_progress["easy"] >= 2 and difficulty == "easy":
+            difficulty = "medium"
+            messagebox.showinfo("Level Up", "🎉 Moving to Medium level!")
+        elif user_progress["medium"] >= 2 and difficulty == "medium":
+            difficulty = "hard"
+            messagebox.showinfo("Level Up", "🔥 Welcome to Hard level!")
+
+        update_level_label()
+        next_flashcard()
+    else:
+        messagebox.showerror("Oops", f"❌ Incorrect.\nCorrect: {current_card['translation']}")
+
+
+def review_phrases():
+    review_win = tk.Toplevel(root)
+    review_win.title("📖 Review Learned Phrases")
+    review_win.geometry("350x450")
+    review_win.configure(bg="#fff9f0")
+
+    for level, items in flashcards.items():
+        section_title = tk.Label(review_win, text=f"{level.capitalize()} Level", font=("Helvetica", 12, "bold"), bg="#fff9f0", fg="#4a4a4a")
+        section_title.pack(pady=(10, 0))
+
+        for item in items:
+            text = f"{item['phrase']} ➡ {item['translation']}"
+            tk.Label(review_win, text=text, font=("Helvetica", 10), bg="#fff9f0", fg="#444").pack(anchor='w', padx=20)
+        tk.Label(review_win, text="-"*30, bg="#fff9f0").pack()
+
+
+def check_progress():
+    progress_text = "\n".join([f"{level.capitalize()}: {count} words" for level, count in user_progress.items()])
+    messagebox.showinfo("📊 Progress Summary", progress_text)
+
+
+# Layout
+title_label = tk.Label(root, text="🌍 Language Flashcards", font=("Helvetica", 18, "bold"), bg="#fefefe", fg="#2c3e50")
+title_label.pack(pady=10)
+
+level_display = tk.Label(root, text="📘 Current Level: Easy", font=("Helvetica", 14), bg="#fefefe", fg="#2980b9")
+level_display.pack()
+
+main_frame = tk.Frame(root, bg="#fefefe")
+main_frame.pack(pady=20)
+
+phrase_label = tk.Label(main_frame, text="Welcome to Flashcards!", font=("Helvetica", 16), bg="#fefefe")
+phrase_label.pack(pady=10)
+
+answer_entry = tk.Entry(main_frame, font=("Helvetica", 14), width=30, justify='center')
+answer_entry.pack(pady=10)
+
+btn_style = {"font": ("Helvetica", 12), "width": 25, "padx": 5, "pady": 5}
+
+tk.Button(main_frame, text="✅ Check Answer", command=check_answer, bg="#d4edda", **btn_style).pack(pady=3)
+tk.Button(main_frame, text="➡ Next Flashcard", command=next_flashcard, bg="#d1ecf1", **btn_style).pack(pady=3)
+tk.Button(main_frame, text="🔄 New Session", command=start_session, bg="#fff3cd", **btn_style).pack(pady=3)
+tk.Button(main_frame, text="📖 Review Phrases", command=review_phrases, bg="#f8d7da", **btn_style).pack(pady=3)
+tk.Button(main_frame, text="📊 Check Progress", command=check_progress, bg="#e2e3e5", **btn_style).pack(pady=3)
+tk.Button(main_frame, text="❌ Exit", command=root.quit, bg="#f5c6cb", **btn_style).pack(pady=10)
+
+progress_label = tk.Label(root, text="Progress: 0/9 words", font=("Helvetica", 10), bg="#fefefe")
+progress_label.pack(pady=5)
+
+progress_bar = ttk.Progressbar(root, orient='horizontal', length=300, mode='determinate', maximum=9)
+progress_bar.pack(pady=5)
+
+# Start app
+start_session()
+root.mainloop()
